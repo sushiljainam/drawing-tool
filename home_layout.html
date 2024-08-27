@@ -376,7 +376,7 @@
         function exportToClipboard() {
             const jsonString = JSON.stringify(layout, null, 2);
             navigator.clipboard.writeText(jsonString).then(() => {
-                alert('Layout exported to clipboard!');
+                // alert('Layout exported to clipboard!');
             });
         }
 
@@ -394,10 +394,11 @@
                 }
                 // Merge imported points and elements
                 layout.points = { ...layout.points, ...importedLayout.points };
+                draw();
                 layout.elements = layout.elements.concat(importedLayout.elements);
                 draw();
                 updatePointSelects();
-                alert('Layout imported successfully!');
+                // alert('Layout imported successfully!');
             } catch (error) {
                 alert('Error importing layout. Please check the JSON format.');
             }
