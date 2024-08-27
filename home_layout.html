@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -9,17 +8,31 @@
         #canvas {
             border: 1px solid #000;
         }
+        .input-group {
+            margin-bottom: 10px;
+        }
+        #importExport {
+            width: 100%;
+            height: 100px;
+        }
     </style>
 </head>
-
 <body>
     <canvas id="canvas" width="800" height="600"></canvas>
-    <div>
-        <button onclick="addElement('line')">Add Line</button>
-        <button onclick="addElement('rectangle')">Add Rectangle</button>
-        <button onclick="addElement('label')">Add Label</button>
-        <button onclick="addElement('measurement')">Add Measurement</button>
-        <button onclick="addElement('arc')">Add Arc</button>
+    <div id="controls">
+        <div class="input-group">
+            <button onclick="showInputs('line')">Add Line</button>
+            <button onclick="showInputs('rectangle')">Add Rectangle</button>
+            <button onclick="showInputs('label')">Add Label</button>
+            <button onclick="showInputs('measurement')">Add Measurement</button>
+            <button onclick="showInputs('arc')">Add Arc</button>
+        </div>
+        <div id="inputFields"></div>
+        <div class="input-group">
+            <button onclick="exportToClipboard()">Export to Clipboard</button>
+            <button onclick="importFromTextarea()">Import from Textarea</button>
+        </div>
+        <textarea id="importExport" placeholder="Paste JSON here for import"></textarea>
     </div>
     <script>
         const canvas = document.getElementById('canvas');
@@ -101,80 +114,108 @@
             ctx.stroke();
         }
 
-        function addElement(type) {
-            let element;
+        function showInputs(type) {
+            const inputFields = document.getElementById('inputFields');
+            inputFields.innerHTML = '';
+            let html = '';
+
             switch (type) {
                 case 'line':
-                    element = {
-                        type: 'line',
-                        id: `line${layout.elements.length + 1}`,
-                        x1: 100,
-                        y1: 100,
-                        x2: 300,
-                        y2: 100,
-                        strokeColor: '#000000',
-                        strokeWidth: 2
-                    };
+                    html = `
+                        <input type="number" id="x1" placeholder="x1">
+                        <input type="number" id="y1" placeholder="y1">
+                        <input type="number" id="x2" placeholder="x2">
+                        <input type="number" id="y2" placeholder="y2">
+                        <input type="color" id="strokeColor" value="#000000">
+                        <input type="number" id="strokeWidth" placeholder="Stroke Width" value="2">
+                    `;
                     break;
                 case 'rectangle':
-                    element = {
-                        type: 'rectangle',
-                        id: `rect${layout.elements.length + 1}`,
-                        x: 100,
-                        y: 100,
-                        width: 200,
-                        height: 150,
-                        strokeColor: '#000000',
-                        strokeWidth: 2,
-                        fillColor: '#FFFFFF'
-                    };
+                    html = `
+                        <input type="number" id="x" placeholder="x">
+                        <input type="number" id="y" placeholder="y">
+                        <input type="number" id="width" placeholder="width">
+                        <input type="number" id="height" placeholder="height">
+                        <input type="color" id="strokeColor" value="#000000">
+                        <input type="number" id="strokeWidth" placeholder="Stroke Width" value="2">
+                        <input type="color" id="fillColor" value="#FFFFFF">
+                    `;
                     break;
                 case 'label':
-                    element = {
-                        type: 'label',
-                        id: `label${layout.elements.length + 1}`,
-                        x: 150,
-                        y: 175,
-                        text: 'New Label',
-                        fontSize: 12,
-                        fontFamily: 'Arial',
-                        color: '#000000'
-                    };
+                    html = `
+                        <input type="number" id="x" placeholder="x">
+                        <input type="number" id="y" placeholder="y">
+                        <input type="text" id="text" placeholder="Label Text">
+                        <input type="number" id="fontSize" placeholder="Font Size" value="12">
+                        <input type="text" id="fontFamily" placeholder="Font Family" value="Arial">
+                        <input type="color" id="color" value="#000000">
+                    `;
                     break;
                 case 'measurement':
-                    element = {
-                        type: 'measurement',
-                        id: `measure${layout.elements.length + 1}`,
-                        x1: 100,
-                        y1: 90,
-                        x2: 300,
-                        y2: 90,
-                        text: '5.0m',
-                        fontSize: 10,
-                        fontFamily: 'Arial',
-                        color: '#666666'
-                    };
+                    html = `
+                        <input type="number" id="x1" placeholder="x1">
+                        <input type="number" id="y1" placeholder="y1">
+                        <input type="number" id="x2" placeholder="x2">
+                        <input type="number" id="y2" placeholder="y2">
+                        <input type="text" id="text" placeholder="Measurement Text">
+                        <input type="number" id="fontSize" placeholder="Font Size" value="10">
+                        <input type="text" id="fontFamily" placeholder="Font Family" value="Arial">
+                        <input type="color" id="color" value="#666666">
+                    `;
                     break;
                 case 'arc':
-                    element = {
-                        type: 'arc',
-                        id: `arc${layout.elements.length + 1}`,
-                        x: 300,
-                        y: 100,
-                        radius: 30,
-                        startAngle: 0,
-                        endAngle: 90,
-                        strokeColor: '#000000',
-                        strokeWidth: 2
-                    };
+                    html = `
+                        <input type="number" id="x" placeholder="x">
+                        <input type="number" id="y" placeholder="y">
+                        <input type="number" id="radius" placeholder="radius">
+                        <input type="number" id="startAngle" placeholder="Start Angle">
+                        <input type="number" id="endAngle" placeholder="End Angle">
+                        <input type="color" id="strokeColor" value="#000000">
+                        <input type="number" id="strokeWidth" placeholder="Stroke Width" value="2">
+                    `;
                     break;
             }
+
+            html += `<button onclick="addElement('${type}')">Add ${type.charAt(0).toUpperCase() + type.slice(1)}</button>`;
+            inputFields.innerHTML = html;
+        }
+
+        function addElement(type) {
+            let element = { type, id: `${type}${layout.elements.length + 1}` };
+            const inputs = document.getElementById('inputFields').getElementsByTagName('input');
+            
+            for (let input of inputs) {
+                if (input.type === 'number') {
+                    element[input.id] = parseFloat(input.value);
+                } else {
+                    element[input.id] = input.value;
+                }
+            }
+
             layout.elements.push(element);
             draw();
+        }
+
+        function exportToClipboard() {
+            const jsonString = JSON.stringify(layout, null, 2);
+            navigator.clipboard.writeText(jsonString).then(() => {
+                alert('Layout exported to clipboard!');
+            });
+        }
+
+        function importFromTextarea() {
+            const textarea = document.getElementById('importExport');
+            try {
+                const importedLayout = JSON.parse(textarea.value);
+                layout = importedLayout;
+                draw();
+                alert('Layout imported successfully!');
+            } catch (error) {
+                alert('Error importing layout. Please check the JSON format.');
+            }
         }
 
         draw();
     </script>
 </body>
-
 </html>
