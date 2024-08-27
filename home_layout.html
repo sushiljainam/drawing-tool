@@ -37,6 +37,20 @@
             width: 100%;
             height: 100px;
         }
+        .ruler-label {
+            position: absolute;
+            font-weight: bold;
+        }
+        #xLabel {
+            right: 5px;
+            top: -15px;
+        }
+        #yLabel {
+            left: -15px;
+            bottom: 5px;
+            transform: rotate(-90deg);
+            transform-origin: left bottom;
+        }
     </style>
 </head>
 <body>
@@ -44,6 +58,8 @@
         <canvas id="xRuler" height="20"></canvas>
         <canvas id="yRuler" width="20"></canvas>
         <canvas id="canvas" width="800" height="600"></canvas>
+        <div id="xLabel" class="ruler-label">X</div>
+        <div id="yLabel" class="ruler-label">Y</div>
     </div>
     <div id="controls">
         <div class="input-group">
@@ -73,6 +89,8 @@
         const yRuler = document.getElementById('yRuler');
         const xRulerCtx = xRuler.getContext('2d');
         const yRulerCtx = yRuler.getContext('2d');
+
+        const ORIGIN_OFFSET = 100;
 
         let layout = {
             canvas: {
@@ -114,22 +132,24 @@
             yRuler.height = canvas.height;
 
             // X Ruler
-            for (let i = 0; i <= canvas.width; i += 50) {
+            for (let i = -ORIGIN_OFFSET; i <= canvas.width - ORIGIN_OFFSET; i += 50) {
+                const x = i + ORIGIN_OFFSET;
                 xRulerCtx.beginPath();
-                xRulerCtx.moveTo(i, 20);
-                xRulerCtx.lineTo(i, 15);
+                xRulerCtx.moveTo(x, 20);
+                xRulerCtx.lineTo(x, 15);
                 xRulerCtx.stroke();
-                xRulerCtx.fillText(i.toString(), i, 10);
+                xRulerCtx.fillText(i.toString(), x, 10);
             }
 
             // Y Ruler
-            for (let i = 0; i <= canvas.height; i += 50) {
+            for (let i = -ORIGIN_OFFSET; i <= canvas.height - ORIGIN_OFFSET; i += 50) {
+                const y = i + ORIGIN_OFFSET;
                 yRulerCtx.beginPath();
-                yRulerCtx.moveTo(15, i);
-                yRulerCtx.lineTo(20, i);
+                yRulerCtx.moveTo(15, y);
+                yRulerCtx.lineTo(20, y);
                 yRulerCtx.stroke();
                 yRulerCtx.save();
-                yRulerCtx.translate(10, i);
+                yRulerCtx.translate(10, y);
                 yRulerCtx.rotate(-Math.PI / 2);
                 yRulerCtx.fillText(i.toString(), 0, 0);
                 yRulerCtx.restore();
@@ -138,10 +158,12 @@
 
         function drawPoints() {
             for (const [label, point] of Object.entries(layout.points)) {
+                const x = point.x + ORIGIN_OFFSET;
+                const y = point.y + ORIGIN_OFFSET;
                 ctx.beginPath();
-                ctx.arc(point.x, point.y, 3, 0, 2 * Math.PI);
+                ctx.arc(x, y, 3, 0, 2 * Math.PI);
                 ctx.fill();
-                ctx.fillText(label, point.x + 5, point.y - 5);
+                ctx.fillText(label, x + 5, y - 5);
             }
         }
 
@@ -149,18 +171,31 @@
             const start = layout.points[element.start];
             const end = layout.points[element.end];
             ctx.beginPath();
-            ctx.moveTo(start.x, start.y);
-            ctx.lineTo(end.x, end.y);
+            ctx.moveTo(start.x + ORIGIN_OFFSET, start.y + ORIGIN_OFFSET);
+            ctx.lineTo(end.x + ORIGIN_OFFSET, end.y + ORIGIN_OFFSET);
             ctx.strokeStyle = element.strokeColor;
             ctx.lineWidth = element.strokeWidth;
             ctx.stroke();
+
+            // Draw line label
+            if (element.label) {
+                const midX = (start.x + end.x) / 2 + ORIGIN_OFFSET;
+                const midY = (start.y + end.y) / 2 + ORIGIN_OFFSET;
+                ctx.fillStyle = element.strokeColor;
+                ctx.fillText(element.label, midX, midY - 5);
+            }
         }
 
         function drawRectangle(element) {
             const topLeft = layout.points[element.topLeft];
             const bottomRight = layout.points[element.bottomRight];
             ctx.beginPath();
-            ctx.rect(topLeft.x, topLeft.y, bottomRight.x - topLeft.x, bottomRight.y - topLeft.y);
+            ctx.rect(
+                topLeft.x + ORIGIN_OFFSET,
+                topLeft.y + ORIGIN_OFFSET,
+                bottomRight.x - topLeft.x,
+                bottomRight.y - topLeft.y
+            );
             ctx.strokeStyle = element.strokeColor;
             ctx.lineWidth = element.strokeWidth;
             ctx.stroke();
@@ -174,7 +209,7 @@
             const point = layout.points[element.point];
             ctx.font = `${element.fontSize}px ${element.fontFamily}`;
             ctx.fillStyle = element.color;
-            ctx.fillText(element.text, point.x, point.y);
+            ctx.fillText(element.text, point.x + ORIGIN_OFFSET, point.y + ORIGIN_OFFSET);
         }
 
         function drawMeasurement(element) {
@@ -189,15 +224,21 @@
             ctx.font = `${element.fontSize}px ${element.fontFamily}`;
             ctx.fillStyle = element.color;
             const textWidth = ctx.measureText(element.text).width;
-            const midX = (start.x + end.x) / 2 - textWidth / 2;
-            const midY = (start.y + end.y) / 2 - 5;
+            const midX = (start.x + end.x) / 2 + ORIGIN_OFFSET - textWidth / 2;
+            const midY = (start.y + end.y) / 2 + ORIGIN_OFFSET - 5;
             ctx.fillText(element.text, midX, midY);
         }
 
         function drawArc(element) {
             const center = layout.points[element.center];
             ctx.beginPath();
-            ctx.arc(center.x, center.y, element.radius, element.startAngle * Math.PI / 180, element.endAngle * Math.PI / 180);
+            ctx.arc(
+                center.x + ORIGIN_OFFSET,
+                center.y + ORIGIN_OFFSET,
+                element.radius,
+                element.startAngle * Math.PI / 180,
+                element.endAngle * Math.PI / 180
+            );
             ctx.strokeStyle = element.strokeColor;
             ctx.lineWidth = element.strokeWidth;
             ctx.stroke();
@@ -242,6 +283,7 @@
                     html = `
                         <select id="start" data-type="point"><option value="">Select start point</option></select>
                         <select id="end" data-type="point"><option value="">Select end point</option></select>
+                        <input type="text" id="label" placeholder="Line Label">
                         <input type="color" id="strokeColor" value="#000000">
                         <input type="number" id="strokeWidth" placeholder="Stroke Width" value="2">
                     `;
