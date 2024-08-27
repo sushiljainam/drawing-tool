@@ -79,6 +79,8 @@
         <div class="input-group">
             <button onclick="exportToClipboard()">Export to Clipboard</button>
             <button onclick="importFromTextarea()">Import from Textarea</button>
+            <input type="checkbox" id="clearCanvasCheckbox">
+            <label for="clearCanvasCheckbox">Clear canvas before import</label>
         </div>
         <textarea id="importExport" placeholder="Paste JSON here for import"></textarea>
     </div>
@@ -363,9 +365,19 @@
 
         function importFromTextarea() {
             const textarea = document.getElementById('importExport');
+            const clearCanvas = document.getElementById('clearCanvasCheckbox').checked;
             try {
                 const importedLayout = JSON.parse(textarea.value);
-                layout = importedLayout;
+                if (clearCanvas) {
+                    layout = {
+                        canvas: layout.canvas,
+                        points: {},
+                        elements: []
+                    };
+                }
+                // Merge imported points and elements
+                layout.points = { ...layout.points, ...importedLayout.points };
+                layout.elements = layout.elements.concat(importedLayout.elements);
                 draw();
                 updatePointSelects();
                 alert('Layout imported successfully!');
