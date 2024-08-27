@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Layout Drawing Tool</title>
+    <style>
+        #canvas {
+            border: 1px solid #000;
+        }
+    </style>
+</head>
+
+<body>
+    <canvas id="canvas" width="800" height="600"></canvas>
+    <div>
+        <button onclick="addElement('line')">Add Line</button>
+        <button onclick="addElement('rectangle')">Add Rectangle</button>
+        <button onclick="addElement('label')">Add Label</button>
+        <button onclick="addElement('measurement')">Add Measurement</button>
+        <button onclick="addElement('arc')">Add Arc</button>
+    </div>
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        let layout = {
+            canvas: {
+                width: 800,
+                height: 600,
+                scale: 1
+            },
+            elements: []
+        };
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            layout.elements.forEach(element => {
+                switch (element.type) {
+                    case 'line':
+                        drawLine(element);
+                        break;
+                    case 'rectangle':
+                        drawRectangle(element);
+                        break;
+                    case 'label':
+                        drawLabel(element);
+                        break;
+                    case 'measurement':
+                        drawMeasurement(element);
+                        break;
+                    case 'arc':
+                        drawArc(element);
+                        break;
+                }
+            });
+        }
+
+        function drawLine(element) {
+            ctx.beginPath();
+            ctx.moveTo(element.x1, element.y1);
+            ctx.lineTo(element.x2, element.y2);
+            ctx.strokeStyle = element.strokeColor;
+            ctx.lineWidth = element.strokeWidth;
+            ctx.stroke();
+        }
+
+        function drawRectangle(element) {
+            ctx.beginPath();
+            ctx.rect(element.x, element.y, element.width, element.height);
+            ctx.strokeStyle = element.strokeColor;
+            ctx.lineWidth = element.strokeWidth;
+            ctx.stroke();
+            if (element.fillColor) {
+                ctx.fillStyle = element.fillColor;
+                ctx.fill();
+            }
+        }
+
+        function drawLabel(element) {
+            ctx.font = `${element.fontSize}px ${element.fontFamily}`;
+            ctx.fillStyle = element.color;
+            ctx.fillText(element.text, element.x, element.y);
+        }
+
+        function drawMeasurement(element) {
+            drawLine(element);
+            ctx.font = `${element.fontSize}px ${element.fontFamily}`;
+            ctx.fillStyle = element.color;
+            const textWidth = ctx.measureText(element.text).width;
+            const midX = (element.x1 + element.x2) / 2 - textWidth / 2;
+            const midY = element.y1 - 5;
+            ctx.fillText(element.text, midX, midY);
+        }
+
+        function drawArc(element) {
+            ctx.beginPath();
+            ctx.arc(element.x, element.y, element.radius, element.startAngle * Math.PI / 180, element.endAngle * Math.PI / 180);
+            ctx.strokeStyle = element.strokeColor;
+            ctx.lineWidth = element.strokeWidth;
+            ctx.stroke();
+        }
+
+        function addElement(type) {
+            let element;
+            switch (type) {
+                case 'line':
+                    element = {
+                        type: 'line',
+                        id: `line${layout.elements.length + 1}`,
+                        x1: 100,
+                        y1: 100,
+                        x2: 300,
+                        y2: 100,
+                        strokeColor: '#000000',
+                        strokeWidth: 2
+                    };
+                    break;
+                case 'rectangle':
+                    element = {
+                        type: 'rectangle',
+                        id: `rect${layout.elements.length + 1}`,
+                        x: 100,
+                        y: 100,
+                        width: 200,
+                        height: 150,
+                        strokeColor: '#000000',
+                        strokeWidth: 2,
+                        fillColor: '#FFFFFF'
+                    };
+                    break;
+                case 'label':
+                    element = {
+                        type: 'label',
+                        id: `label${layout.elements.length + 1}`,
+                        x: 150,
+                        y: 175,
+                        text: 'New Label',
+                        fontSize: 12,
+                        fontFamily: 'Arial',
+                        color: '#000000'
+                    };
+                    break;
+                case 'measurement':
+                    element = {
+                        type: 'measurement',
+                        id: `measure${layout.elements.length + 1}`,
+                        x1: 100,
+                        y1: 90,
+                        x2: 300,
+                        y2: 90,
+                        text: '5.0m',
+                        fontSize: 10,
+                        fontFamily: 'Arial',
+                        color: '#666666'
+                    };
+                    break;
+                case 'arc':
+                    element = {
+                        type: 'arc',
+                        id: `arc${layout.elements.length + 1}`,
+                        x: 300,
+                        y: 100,
+                        radius: 30,
+                        startAngle: 0,
+                        endAngle: 90,
+                        strokeColor: '#000000',
+                        strokeWidth: 2
+                    };
+                    break;
+            }
+            layout.elements.push(element);
+            draw();
+        }
+
+        draw();
+    </script>
+</body>
+
+</html>
