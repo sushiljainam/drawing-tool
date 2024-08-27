@@ -3,10 +3,32 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Simple Layout Drawing Tool</title>
+    <title>Advanced Layout Drawing Tool</title>
     <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+        #canvasContainer {
+            position: relative;
+            margin-top: 30px;
+            margin-left: 30px;
+        }
         #canvas {
             border: 1px solid #000;
+        }
+        #xRuler, #yRuler {
+            position: absolute;
+            background-color: #f0f0f0;
+        }
+        #xRuler {
+            height: 20px;
+            left: 0;
+            top: -20px;
+        }
+        #yRuler {
+            width: 20px;
+            left: -20px;
+            top: 0;
         }
         .input-group {
             margin-bottom: 10px;
@@ -18,8 +40,18 @@
     </style>
 </head>
 <body>
-    <canvas id="canvas" width="800" height="600"></canvas>
+    <div id="canvasContainer">
+        <canvas id="xRuler" height="20"></canvas>
+        <canvas id="yRuler" width="20"></canvas>
+        <canvas id="canvas" width="800" height="600"></canvas>
+    </div>
     <div id="controls">
+        <div class="input-group">
+            <input type="text" id="pointLabel" placeholder="Point Label (e.g., A)">
+            <input type="number" id="pointX" placeholder="X coordinate">
+            <input type="number" id="pointY" placeholder="Y coordinate">
+            <button onclick="addPoint()">Add Point</button>
+        </div>
         <div class="input-group">
             <button onclick="showInputs('line')">Add Line</button>
             <button onclick="showInputs('rectangle')">Add Rectangle</button>
@@ -37,17 +69,25 @@
     <script>
         const canvas = document.getElementById('canvas');
         const ctx = canvas.getContext('2d');
+        const xRuler = document.getElementById('xRuler');
+        const yRuler = document.getElementById('yRuler');
+        const xRulerCtx = xRuler.getContext('2d');
+        const yRulerCtx = yRuler.getContext('2d');
+
         let layout = {
             canvas: {
                 width: 800,
                 height: 600,
                 scale: 1
             },
+            points: {},
             elements: []
         };
 
         function draw() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawRulers();
+            drawPoints();
             layout.elements.forEach(element => {
                 switch (element.type) {
                     case 'line':
@@ -69,18 +109,58 @@
             });
         }
 
+        function drawRulers() {
+            xRuler.width = canvas.width;
+            yRuler.height = canvas.height;
+
+            // X Ruler
+            for (let i = 0; i <= canvas.width; i += 50) {
+                xRulerCtx.beginPath();
+                xRulerCtx.moveTo(i, 20);
+                xRulerCtx.lineTo(i, 15);
+                xRulerCtx.stroke();
+                xRulerCtx.fillText(i.toString(), i, 10);
+            }
+
+            // Y Ruler
+            for (let i = 0; i <= canvas.height; i += 50) {
+                yRulerCtx.beginPath();
+                yRulerCtx.moveTo(15, i);
+                yRulerCtx.lineTo(20, i);
+                yRulerCtx.stroke();
+                yRulerCtx.save();
+                yRulerCtx.translate(10, i);
+                yRulerCtx.rotate(-Math.PI / 2);
+                yRulerCtx.fillText(i.toString(), 0, 0);
+                yRulerCtx.restore();
+            }
+        }
+
+        function drawPoints() {
+            for (const [label, point] of Object.entries(layout.points)) {
+                ctx.beginPath();
+                ctx.arc(point.x, point.y, 3, 0, 2 * Math.PI);
+                ctx.fill();
+                ctx.fillText(label, point.x + 5, point.y - 5);
+            }
+        }
+
         function drawLine(element) {
+            const start = layout.points[element.start];
+            const end = layout.points[element.end];
             ctx.beginPath();
-            ctx.moveTo(element.x1, element.y1);
-            ctx.lineTo(element.x2, element.y2);
+            ctx.moveTo(start.x, start.y);
+            ctx.lineTo(end.x, end.y);
             ctx.strokeStyle = element.strokeColor;
             ctx.lineWidth = element.strokeWidth;
             ctx.stroke();
         }
 
         function drawRectangle(element) {
+            const topLeft = layout.points[element.topLeft];
+            const bottomRight = layout.points[element.bottomRight];
             ctx.beginPath();
-            ctx.rect(element.x, element.y, element.width, element.height);
+            ctx.rect(topLeft.x, topLeft.y, bottomRight.x - topLeft.x, bottomRight.y - topLeft.y);
             ctx.strokeStyle = element.strokeColor;
             ctx.lineWidth = element.strokeWidth;
             ctx.stroke();
@@ -91,27 +171,65 @@
         }
 
         function drawLabel(element) {
+            const point = layout.points[element.point];
             ctx.font = `${element.fontSize}px ${element.fontFamily}`;
             ctx.fillStyle = element.color;
-            ctx.fillText(element.text, element.x, element.y);
+            ctx.fillText(element.text, point.x, point.y);
         }
 
         function drawMeasurement(element) {
-            drawLine(element);
+            const start = layout.points[element.start];
+            const end = layout.points[element.end];
+            drawLine({
+                start: element.start,
+                end: element.end,
+                strokeColor: element.color,
+                strokeWidth: 1
+            });
             ctx.font = `${element.fontSize}px ${element.fontFamily}`;
             ctx.fillStyle = element.color;
             const textWidth = ctx.measureText(element.text).width;
-            const midX = (element.x1 + element.x2) / 2 - textWidth / 2;
-            const midY = element.y1 - 5;
+            const midX = (start.x + end.x) / 2 - textWidth / 2;
+            const midY = (start.y + end.y) / 2 - 5;
             ctx.fillText(element.text, midX, midY);
         }
 
         function drawArc(element) {
+            const center = layout.points[element.center];
             ctx.beginPath();
-            ctx.arc(element.x, element.y, element.radius, element.startAngle * Math.PI / 180, element.endAngle * Math.PI / 180);
+            ctx.arc(center.x, center.y, element.radius, element.startAngle * Math.PI / 180, element.endAngle * Math.PI / 180);
             ctx.strokeStyle = element.strokeColor;
             ctx.lineWidth = element.strokeWidth;
             ctx.stroke();
+        }
+
+        function addPoint() {
+            const label = document.getElementById('pointLabel').value;
+            const x = parseInt(document.getElementById('pointX').value);
+            const y = parseInt(document.getElementById('pointY').value);
+
+            if (label && !isNaN(x) && !isNaN(y)) {
+                layout.points[label] = { x, y };
+                draw();
+                updatePointSelects();
+            } else {
+                alert('Please enter a valid label and coordinates.');
+            }
+        }
+
+        function updatePointSelects() {
+            const selects = document.querySelectorAll('select[data-type="point"]');
+            selects.forEach(select => {
+                const currentValue = select.value;
+                select.innerHTML = '<option value="">Select a point</option>';
+                for (const label in layout.points) {
+                    const option = document.createElement('option');
+                    option.value = label;
+                    option.textContent = label;
+                    select.appendChild(option);
+                }
+                select.value = currentValue;
+            });
         }
 
         function showInputs(type) {
@@ -122,20 +240,16 @@
             switch (type) {
                 case 'line':
                     html = `
-                        <input type="number" id="x1" placeholder="x1">
-                        <input type="number" id="y1" placeholder="y1">
-                        <input type="number" id="x2" placeholder="x2">
-                        <input type="number" id="y2" placeholder="y2">
+                        <select id="start" data-type="point"><option value="">Select start point</option></select>
+                        <select id="end" data-type="point"><option value="">Select end point</option></select>
                         <input type="color" id="strokeColor" value="#000000">
                         <input type="number" id="strokeWidth" placeholder="Stroke Width" value="2">
                     `;
                     break;
                 case 'rectangle':
                     html = `
-                        <input type="number" id="x" placeholder="x">
-                        <input type="number" id="y" placeholder="y">
-                        <input type="number" id="width" placeholder="width">
-                        <input type="number" id="height" placeholder="height">
+                        <select id="topLeft" data-type="point"><option value="">Select top-left point</option></select>
+                        <select id="bottomRight" data-type="point"><option value="">Select bottom-right point</option></select>
                         <input type="color" id="strokeColor" value="#000000">
                         <input type="number" id="strokeWidth" placeholder="Stroke Width" value="2">
                         <input type="color" id="fillColor" value="#FFFFFF">
@@ -143,8 +257,7 @@
                     break;
                 case 'label':
                     html = `
-                        <input type="number" id="x" placeholder="x">
-                        <input type="number" id="y" placeholder="y">
+                        <select id="point" data-type="point"><option value="">Select point</option></select>
                         <input type="text" id="text" placeholder="Label Text">
                         <input type="number" id="fontSize" placeholder="Font Size" value="12">
                         <input type="text" id="fontFamily" placeholder="Font Family" value="Arial">
@@ -153,10 +266,8 @@
                     break;
                 case 'measurement':
                     html = `
-                        <input type="number" id="x1" placeholder="x1">
-                        <input type="number" id="y1" placeholder="y1">
-                        <input type="number" id="x2" placeholder="x2">
-                        <input type="number" id="y2" placeholder="y2">
+                        <select id="start" data-type="point"><option value="">Select start point</option></select>
+                        <select id="end" data-type="point"><option value="">Select end point</option></select>
                         <input type="text" id="text" placeholder="Measurement Text">
                         <input type="number" id="fontSize" placeholder="Font Size" value="10">
                         <input type="text" id="fontFamily" placeholder="Font Family" value="Arial">
@@ -165,8 +276,7 @@
                     break;
                 case 'arc':
                     html = `
-                        <input type="number" id="x" placeholder="x">
-                        <input type="number" id="y" placeholder="y">
+                        <select id="center" data-type="point"><option value="">Select center point</option></select>
                         <input type="number" id="radius" placeholder="radius">
                         <input type="number" id="startAngle" placeholder="Start Angle">
                         <input type="number" id="endAngle" placeholder="End Angle">
@@ -178,11 +288,13 @@
 
             html += `<button onclick="addElement('${type}')">Add ${type.charAt(0).toUpperCase() + type.slice(1)}</button>`;
             inputFields.innerHTML = html;
+            updatePointSelects();
         }
 
         function addElement(type) {
             let element = { type, id: `${type}${layout.elements.length + 1}` };
             const inputs = document.getElementById('inputFields').getElementsByTagName('input');
+            const selects = document.getElementById('inputFields').getElementsByTagName('select');
             
             for (let input of inputs) {
                 if (input.type === 'number') {
@@ -190,6 +302,10 @@
                 } else {
                     element[input.id] = input.value;
                 }
+            }
+
+            for (let select of selects) {
+                element[select.id] = select.value;
             }
 
             layout.elements.push(element);
@@ -209,12 +325,14 @@
                 const importedLayout = JSON.parse(textarea.value);
                 layout = importedLayout;
                 draw();
+                updatePointSelects();
                 alert('Layout imported successfully!');
             } catch (error) {
                 alert('Error importing layout. Please check the JSON format.');
             }
         }
 
+        drawRulers();
         draw();
     </script>
 </body>
