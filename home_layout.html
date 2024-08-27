@@ -60,12 +60,12 @@
         <canvas id="canvas" width="800" height="600"></canvas>
         <div id="xLabel" class="ruler-label">X</div>
         <div id="yLabel" class="ruler-label">Y</div>
+        <div id="coordinates">X: 0, Y: 0</div>
     </div>
     <div id="controls">
         <div class="input-group">
             <input type="text" id="pointLabel" placeholder="Point Label (e.g., A)">
-            <input type="number" id="pointX" placeholder="X coordinate">
-            <input type="number" id="pointY" placeholder="Y coordinate">
+            <span id="pointCoordinates">X: 0, Y: 0</span>
             <button onclick="addPoint()">Add Point</button>
         </div>
         <div class="input-group">
@@ -245,18 +245,35 @@
             ctx.lineWidth = element.strokeWidth;
             ctx.stroke();
         }
+        let selectedX = 0;
+        let selectedY = 0;
+
+        canvas.addEventListener('mousemove', updateCoordinates);
+        canvas.addEventListener('click', setPointCoordinates);
+
+        function updateCoordinates(event) {
+            const rect = canvas.getBoundingClientRect();
+            const x = Math.round(event.clientX - rect.left - ORIGIN_OFFSET);
+            const y = Math.round(event.clientY - rect.top - ORIGIN_OFFSET);
+            document.getElementById('coordinates').textContent = `X: ${x}, Y: ${y}`;
+        }
+
+        function setPointCoordinates(event) {
+            const rect = canvas.getBoundingClientRect();
+            selectedX = Math.round(event.clientX - rect.left - ORIGIN_OFFSET);
+            selectedY = Math.round(event.clientY - rect.top - ORIGIN_OFFSET);
+            document.getElementById('pointCoordinates').textContent = `X: ${selectedX}, Y: ${selectedY}`;
+        }
 
         function addPoint() {
             const label = document.getElementById('pointLabel').value;
-            const x = parseInt(document.getElementById('pointX').value);
-            const y = parseInt(document.getElementById('pointY').value);
 
-            if (label && !isNaN(x) && !isNaN(y)) {
-                layout.points[label] = { x, y };
+            if (label) {
+                layout.points[label] = { x: selectedX, y: selectedY };
                 draw();
                 updatePointSelects();
             } else {
-                alert('Please enter a valid label and coordinates.');
+                alert('Please enter a valid label for the point.');
             }
         }
 
