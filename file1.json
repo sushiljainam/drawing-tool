@@ -1,0 +1,80 @@
+{
+    "canvas": {
+        "width": 800,
+        "height": 600,
+        "scale": 1
+    },
+    "points": {
+        "A": {
+            "x": 0,
+            "y": 0
+        },
+        "B": {
+            "x": 500,
+            "y": 0
+        },
+        "C": {
+            "x": 0,
+            "y": 290
+        },
+        "D": {
+            "x": 500,
+            "y": 290
+        },
+        "E": {
+            "x": 100,
+            "y": 0
+        },
+        "F": {
+            "x": 100,
+            "y": 290
+        }
+    },
+    "elements": [
+        {
+            "type": "line",
+            "id": "line1",
+            "label": "south side",
+            "strokeColor": "#000000",
+            "strokeWidth": 9,
+            "start": "A",
+            "end": "B"
+        },
+        {
+            "type": "line",
+            "id": "line2",
+            "label": "west side",
+            "strokeColor": "#000000",
+            "strokeWidth": 9,
+            "start": "D",
+            "end": "B"
+        },
+        {
+            "type": "line",
+            "id": "line3",
+            "label": "",
+            "strokeColor": "#000000",
+            "strokeWidth": 9,
+            "start": "D",
+            "end": "C"
+        },
+        {
+            "type": "line",
+            "id": "line4",
+            "label": "",
+            "strokeColor": "#000000",
+            "strokeWidth": 9,
+            "start": "A",
+            "end": "C"
+        },
+        {
+            "type": "line",
+            "id": "line5",
+            "label": "",
+            "strokeColor": "#000000",
+            "strokeWidth": 9,
+            "start": "E",
+            "end": "F"
+        }
+    ]
+}
